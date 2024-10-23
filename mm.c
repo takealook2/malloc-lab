@@ -38,7 +38,6 @@ team_t team = {
 #define ALIGNMENT 8
 /* rounds up to the nearest multiple of ALIGNMENT */
 #define ALIGN(size) (((size) + (ALIGNMENT - 1)) & ~0x7)
-#define SIZE_T_SIZE (ALIGN(sizeof(size_t)))
 #define WSIZE 4            /* Word size (bytes) */
 #define DSIZE 8             /* Double word size (bytes) */
 #define CHUNKSIZE (1 << 12) /* Extend heap by this amount (bytes) */
