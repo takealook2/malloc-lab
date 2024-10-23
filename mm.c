@@ -14,6 +14,7 @@
 #include <assert.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdint.h>
 
 #include "mm.h"
 #include "memlib.h"
@@ -35,12 +36,12 @@ team_t team = {
 
 // ! 메모리 정렬 및 크기 계산을 위한 매크로 정의
 /* single word (4 bytes) or double word (8 bytes) alignment */
-#define ALIGNMENT 8
+#define ALIGNMENT (sizeof(void *))
 /* rounds up to the nearest multiple of ALIGNMENT */
-#define ALIGN(size) (((size) + (ALIGNMENT - 1)) & ~0x7)
+#define ALIGN(size) (((size) + (ALIGNMENT - 1)) & ~(ALIGNMENT - 1))
 #define SIZE_T_SIZE (ALIGN(sizeof(size_t)))
-#define WSIZE 4            /* Word size (bytes) */
-#define DSIZE 8             /* Double word size (bytes) */
+#define WSIZE (ALIGN(sizeof(size_t)))            /* Word size (bytes) */
+#define DSIZE (WSIZE*2)            /* Double word size (bytes) */
 #define CHUNKSIZE (1 << 12) /* Extend heap by this amount (bytes) */
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 
@@ -54,7 +55,7 @@ team_t team = {
 #define PUT(p, val) (*(unsigned int *)(p) = (val))
 
 /* Read size and allocated fields from address p */
-#define GET_SIZE(p) (GET(p) & ~0x7)
+#define GET_SIZE(p) (GET(p) & ~(ALIGNMENT - 1))
 #define GET_ALLOC(p) (GET(p) & 0x1)
 
 /* Given block ptr bp, compute address of its header and footer */
@@ -93,6 +94,7 @@ int mm_init(void)
     /* Extend the empty heap with a free block of CHUNKSIZE bytes */
     if (extend_heap(CHUNKSIZE / WSIZE) == NULL)
         return -1;
+
     if (extend_heap(4)==NULL)
         return -1;
     return 0;
@@ -107,10 +109,12 @@ static void *extend_heap(size_t words)
     size_t size;
 
     /* Allocate an even number of words to maintain alignment */
-    size = (words % 2) ? (words + 1) * WSIZE : words * WSIZE;
+    size = ALIGN(words * WSIZE);
 
     if ((long)(bp = mem_sbrk(size)) == -1)
         return NULL;
+    
+    bp = (void *)ALIGN((uintptr_t)bp);
 
     /* Initialize the free block header/footer and the epilogue header */
     PUT(HDRP(bp), PACK(size, 0));         /* Free block header */
@@ -187,11 +191,11 @@ static void place(void *bp, size_t asize)
 {
     size_t csize = GET_SIZE(HDRP(bp));
 
-    if ((csize - asize) >= (DSIZE))
+    if ((csize - asize) >= (2 * DSIZE))
     {
         PUT(HDRP(bp), PACK(asize, 1));
         PUT(FTRP(bp), PACK(asize, 1));
-        bp = NEXT_BLKP(bp);
+        char *next_bp = (char *)bp + asize;
         PUT(HDRP(bp), PACK(csize - asize, 0));
         PUT(FTRP(bp), PACK(csize - asize, 0));
     }
