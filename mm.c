@@ -93,6 +93,8 @@ int mm_init(void)
     /* Extend the empty heap with a free block of CHUNKSIZE bytes */
     if (extend_heap(CHUNKSIZE / WSIZE) == NULL)
         return -1;
+    if (extend_heap(4)==NULL)
+        return -1;
     return 0;
 }
 
@@ -175,29 +177,6 @@ static void *find_fit(size_t asize)
         }
     }
     return NULL; /* No fit found */
-
-    /* best-fit */
-    // void *bp;
-    // void *best_bp = NULL;
-    // size_t smallest_diff = (size_t)-1;
-
-    // for (bp = heap_listp; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp))
-    // {
-    //     if (!GET_ALLOC(HDRP(bp)) && (asize <= GET_SIZE(HDRP(bp))))
-    //     {
-    //         size_t diff = GET_SIZE(HDRP(bp)) - asize;
-    //         if (diff < smallest_diff)
-    //         {
-    //             smallest_diff = diff;
-    //             best_bp = bp;
-
-    //             // 정확히 맞는 블록을 찾으면 즉시 반환
-    //             if (diff == 0)
-    //                 break;
-    //         }
-    //     }
-    // }
-    // return best_bp;
 }
 
 /*
