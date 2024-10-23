@@ -65,6 +65,7 @@ void *mem_sbrk(int incr)
 	return (void *)-1;
     }
     mem_brk += incr;
+
     return (void *)old_brk;
 }
 
